@@ -85,15 +85,13 @@ def scr_status( w, msg ):
 ##
 ## touch the stdscr ...
 def scr_touch():
-	global stdscr
-	stdscr.touchwin()
+	scr_stdscr().touchwin()
 
 ##
 ## hit return to continue ...
 def scr_hitreturn():
-	global stdscr
-	scr_status( stdscr, "hit return" )
-	return stdscr.getch()
+	scr_status( scr_stdscr(), "hit return" )
+	return scr_stdscr().getch()
 
 ##
 ## vertical menu for select list ... 
@@ -228,6 +226,10 @@ def scr_getstring( w, at ):
 
 	return rv
 
+def scr_stdscr():
+    global stdscr
+    return stdscr
+
 stdscr = None
 window_list = []
 
@@ -240,8 +242,8 @@ def main():
 	scr_hitreturn()
 
 	n = scr_select( [10, 10], [ "One", "Two", "Three", "Four", "Five" ])
-        n = scr_menu( stdscr,  [ "One", "Two", "Three", "Four", "Five" ])
-	scr_status( stdscr, "happy as a pig" )
+        n = scr_menu( scr_stdscr(),  [ "Database", "File", "Lineage", "Compare", "Help" ])
+	scr_status( scr_stdscr(), "happy as a pig" )
 
 	while True:
 		scr_clearline( w, 1 )
