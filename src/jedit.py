@@ -13,7 +13,7 @@ import time
 def scr_init():
 	global window_list
 
-	atexit.register( scr_end )
+	atexit.register( scr_finish )
 	scr = curses.initscr()
 	curses.noecho()
 	curses.cbreak()
@@ -26,7 +26,7 @@ def scr_init():
 
 ##
 ## restore the screen to line mode ...
-def scr_end():
+def scr_finish():
 	curses.nocbreak()
 	curses.echo()
 	curses.endwin()
@@ -54,7 +54,7 @@ def scr_endwin():
 def scr_refresh():
 	for w in window_list:
 		w.touchwin()
-                w.border( 0 )
+		w.border( 0 )
 		w.refresh()
 
 ##
@@ -73,6 +73,14 @@ def scr_clearwin( w ):
     y, x = w.getmaxyx()
     for ix in range( 1, y-1 ):
         scr_clearline( w, ix )
+
+##
+## display a title message on the upper left quadrant ...
+def scr_title( w, msg ):
+    y, x = w.getmaxyx()
+    mx = x - len( msg ) - 1 
+    w.addstr( 0, 2, msg[0:mx] )
+    w.refresh()
 
 ##
 ## display a status message in the lower right quadrant ...
@@ -100,10 +108,7 @@ def scr_vmenu( w, lst ):
 	ix = 0
 	mx = len( lst ) - 1
 	while True:
-		if ix < 0:
-			ix = 0
-		if ix > mx:
-			ix = mx
+		ix = 0 if ix < 0 else mx if ix > mx else ix
 		w.addstr( ix+1, 1, lst[ix], curses.A_REVERSE | curses.A_BOLD )
 		w.refresh()
 		ch = w.getch()
@@ -113,7 +118,7 @@ def scr_vmenu( w, lst ):
 			ix -= 1 
 		if ch == curses.KEY_DOWN or ch == ord( 'j' ):
 			ix += 1 
-		if ch == 10 or ch == 13:
+		if ch == 10 or ch == 13 or ch == 32:
 			scr_endwin()
 			return ix
 
@@ -156,23 +161,20 @@ def scr_hmenu( win, lst ):
     ix = 0
     mx = len( lst ) -1 
     while True:
-        if ix < 0:
-            ix = 0
-        if ix > mx:
-            ix = mx
-        pos = ix * spacing
-        win.addstr( 1, 1+pos, lst[ix], curses.A_REVERSE )
-	win.refresh()
-	ch = win.getch()
-        win.addstr( 1, 1+pos, lst[ix], curses.A_NORMAL )
+		ix = 0 if ix < 0 else mx if ix > mx else ix
+		pos = ix * spacing
+		win.addstr( 1, 1+pos, lst[ix], curses.A_REVERSE )
+		win.refresh()
+		ch = win.getch()
+		win.addstr( 1, 1+pos, lst[ix], curses.A_NORMAL )
+		if ch == curses.KEY_UP or ch == ord( 'k' ):
+			ix -= 1 
+		if ch == curses.KEY_DOWN or ch == ord( 'j' ):
+			ix += 1 
+		if ch == 10 or ch == 13 or ch == 32:
+			scr_endwin()
+			return ix
 
-	if ch == curses.KEY_UP or ch == ord( 'k' ):
-    	    ix -= 1 
-	if ch == curses.KEY_DOWN or ch == ord( 'j' ):
-		ix += 1 
-	if ch == 10 or ch == 13:
-		scr_endwin()
-		return ix
 
 ##
 ## create a horizontal menu at top of a window ...
@@ -211,6 +213,9 @@ def scr_getstring( w, at ):
                     w.border( 0 )
                     w.refresh()
 
+		if ch == 24:
+			return None
+
 		if ch == 8 or ch == 127:	## backspace ...
 			if len( rv ) >= 1:
 				rv = rv[0:-1]
@@ -237,24 +242,24 @@ def main():
 	global stdscr
 
 	stdscr = scr_init()
-	stdscr.addstr( 0, 10, " Ceeqit Assurance Platform " )
+	scr_title( scr_stdscr(), " Ceeqit Assurance Platform " )
+	n = scr_menu( scr_stdscr(),  [ "Database", "File", "Lineage", "Compare", "Help" ])
 	w = scr_window( [10,10], [30,30] )
 	scr_hitreturn()
 
 	n = scr_select( [10, 10], [ "One", "Two", "Three", "Four", "Five" ])
-        n = scr_menu( scr_stdscr(),  [ "Database", "File", "Lineage", "Compare", "Help" ])
 	scr_status( scr_stdscr(), "happy as a pig" )
 
 	while True:
 		scr_clearline( w, 1 )
 		s = scr_getstring( w, [1,1] )
+		if not s:
+			break
 		scr_clearline( w, 10 )
 		w.addstr( 10, 10, s )
 		scr_refresh()
 
-	scr_end()
-	time.sleep( 2 )
-	print s
+	scr_finish()
 
 if __name__ == '__main__':
 	main()
